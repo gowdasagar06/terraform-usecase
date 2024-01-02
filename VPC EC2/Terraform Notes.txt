@@ -1,0 +1,224 @@
+What is a map in Terraform?
+In Terraform, a “map” is a data structure used to represent a collection of key-value pairs. It is similar to an object or dictionary in other programming languages. Maps are a fundamental data type in Terraform’s HashiCorp Configuration Language (HCL), which is used to define infrastructure as code (IaC) in Terraform.
+
+Maps are commonly used in Terraform to store configuration data, define variables, and pass information between different parts of your code.
+
+When defining your map variable, you can define the type annotation. The following types can be used to define your map:
+
+map(string): The values in the map are of type “string.”
+map(number): The values in the map are of type “number” (integer or floating-point).
+map(bool): The values in the map are of type “bool” (true or false).
+map(list): The values in the map are lists (arrays) containing elements of the same type.
+map(set): The values in the map are sets containing unique elements of the same type.
+map(object({ ... })): The values in the map are objects (complex data structures) that must conform to a specific structure defined by the object’s attributes.
+What is the difference between map and object?
+While maps and objects have similar syntax (both use curly braces {} and key-value pairs), their intended purposes and where they are typically used in Terraform are distinct.
+
+Objects are mainly used to represent and manage resource attributes in Terraform providers, where the provider uses the object to understand the properties of a resource being managed.
+
+As an example, the code below creates an AWS EC2 instance. The tags attribute of the resource would be considered an ‘object’.
+
+resource "aws_instance" "example_instance" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name        = "Example Instance"
+    Environment = "Production"
+  }
+}
+What is the difference between map(string) and map(object)?
+The difference between map(string) and map(object) refer to different types of maps with distinct purposes.
+
+String-type maps mean that each key in the map is associated with a string value.
+
+type = map(string)
+Object type maps mean that the values are of type “object.” In this context, “object” means a complex data structure that can have multiple attributes represented by key-value pairs.
+
+The “object” type is typically used when you want to define structured data with multiple attributes for each key in the map.
+
+type = map(object)
+Let’s check out some examples of each!
+
+Using Terraform map
+A map in Terraform is defined using curly braces {} and consists of zero or more key-value pairs.
+
+Each key in the map must be unique, and the values can be of any data type supported by Terraform, such as strings, numbers, lists, or even nested maps.
+
+Example 1 – Map of string
+The example below shows a simple map of type string in Terraform:
+
+variable "force_map" {
+  type = map(string)
+  default = {
+    luke  = "jedi"
+    yoda  = "jedi"
+    darth = "sith"
+  }
+}
+In this example, we define a variable named force_map with the type map(string), indicating that it is a map with string values.
+
+The map contains three key-value pairs (the keys are luke, yoda and darth, and the values are specified for each as jedi, jedi and sith). Values are simple strings associated with each key.
+
+To access the values in the map, you can use the keys. For example, to access the value corresponding to ‘yoda’ in the force_map variable, you would use ${var.force_map["yoda"]}. This would return jedi!
+
+Example 2 – Map of object
+The example below shows a map of type ‘object’. Values are complex objects with multiple attributes represented by key-value pairs.
+
+variable "example_map" {
+  type = map(object({
+    name = string
+    enemies_destroyed = number
+    badguy = bool
+  }))
+  default = {
+    key1 = {
+      name = "luke"
+      enemies_destroyed = 4252
+      badguy = false
+    }
+    key2 = {
+      name = "yoda"
+      enemies_destroyed = 900
+      badguy = false
+    }
+    key3 = {
+      name = "darth"
+      enemies_destroyed=  20000056894
+      badguy = true
+    }
+  }
+}
+Each key in the example above (key1, key2 and key3) is associated with a complex object having attributes “name,” “enemies_destroyed,” and “badguy”, each value having a different data types (string, number and bool).
+
+Example 3 – Map of lists
+The next example shows a map of lists, which contain values of type string:
+
+variable "lightsabre_color_map" {
+  type = map(list(string))
+  default = {
+    luke = ["green", "blue"]
+    yoda = ["green"]
+    darth = ["red"]
+  }
+}
+This could also be achieved with a map using the ‘set’ type:
+
+variable "lightsabre_color_map" {
+  type = map(set(string))
+  default = {
+    luke = ["green", "blue"]
+    yoda = ["green"]
+    darth = ["red"]
+  }
+}
+💡 You might also like:
+
+Why You Shouldn’t Manage Terraform with Generic CI/CD Tools
+20 Best Practices for Using Terraform
+Deploying Infrastructure in CI/CD with Terraform
+Map with local values
+In Terraform, you can use a map with Terraform local values to store data that you want to use within your configuration without repeating the computation. Using local values helps to keep your code clean, readable, and more maintainable.
+
+In the below example, we generate a name for an AWS S3 bucket resource using the number of enemies each character has destroyed.
+
+# The list of characters and their corresponding enemies destroyed
+variable "enemies_map" {
+  type = map(number)
+  default = {
+    luke  = 4252
+    yoda  = 900
+    darth = 20000056894
+  }
+}
+
+locals {
+  # Computed names for each bucket
+  bucket_names = {
+    for name, destroyed in var.enemies_map :
+    name=> "${name}-bucket"
+  }
+}
+
+resource "aws_s3_bucket" "buckets" {
+  for_each = local.bucket_names
+
+  bucket = each.value
+  acl    = "private"
+}
+How to convert list to map
+You can convert a list to a map using the for expression and the toset() function. The toset() function is used to convert a list into a set, which then can be used to create a map with unique keys and associated values. This conversion is necessary in situations where you have a map in Terraform that requires unique keys, and you have a list that has duplicate elements.
+
+In the example below, we have two lists defined in our locals, characters and enemies_destroyed that we want to convert to a map.
+
+locals {
+  characters = ["luke", "yoda", "darth"]
+  enemies_destroyed = [4252, 900, 20000056894]
+
+  map = {
+    for index, character in toset(local.characters) : # Convert character list to a set
+      character => local.enemies_destroyed[index]
+  }
+}
+The for expression is used to loop over the set to create the map, where we use characters as the key and enemies_destroyed as the value.
+
+This results in the following map:
+
+{
+  "luke"  = 4252
+  "yoda" = 900
+  "darth" = 20000056894
+}
+Using Terraform flatten function with a map
+To convert your map or nested list back into a flat list, use the Terraform flatten() function.
+
+When applied to a map, it flattens the map into a list of key-value pairs represented as a list of lists. Each sublist contains two elements: the key and the corresponding value from the original map.
+
+In the example below we use the flatten function again with the for expression to iterate over the key-value pairs in the enemies_map.
+
+locals {
+  enemies_map= {
+    luke  = 4252
+    yoda  = 900
+    darth = 20000056894
+  }
+
+  flattened_enemies_map = flatten([
+    for key, value in local.enemies_map:
+    [key, value]
+  ])
+}
+The resulting flat list looks like this:
+
+[
+  "luke", 4252,
+  "yoda", 900,
+  "darth", 20000056894,
+]
+Terraform map and tomap functions
+We can use the map function to create a map as shown in the examples above.
+
+We can also use the tomap function to convert other data types to maps. It can be used to convert a single object or a single-element list into a map, where each attribute of the object becomes a key-value pair in the resulting map.
+
+In the example below, we have our enemies_list defined as type list. We can use the tomap function to convert this to a list where the name is the key and enemies_destroyed is the value.
+
+locals {
+  enemies_list = [
+    { name = "luke",  enemies_destroyed = 4252 },
+    { name = "yoda", enemies_destroyed = 900},
+    { name = "darth", enemies_destroyed = 20000056894},
+  ]
+
+  map = tomap({
+    for character in local.enemies_list:
+    character.name => character.enemies_destroyed
+  })
+}
+Note that because a map requires all of the elements to be of the same type, mixed-typed elements will be converted to the most general type. For example if we had a list containing strings and boolean values, using tomap would result in the values all being strings:
+
+tomap({"character" = "luke", "badguy" = false})
+
+# Output:
+{
+  "a" = "luke"
+  "b" = "false"

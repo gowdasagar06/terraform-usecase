@@ -1,0 +1,5 @@
+region = "ap-south-1"
+cidr_block = "10.0.0.0/16"
+# bucket_name = "terrform-s3-bucket-demo"
+table_name = "my-dynamodb-table"
+hash_key   = "my_key"
