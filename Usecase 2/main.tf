@@ -48,6 +48,10 @@ resource "aws_subnet" "database_subnet" {
   }
 }
 
+data "aws_iam_policy" "cloud-watch-policy" {
+  name = "CloudWatchFullAccess" //this AWS managed policy
+}
+
 resource "aws_flow_log" "vpc_flow_logs" {
   count                   = length(aws_subnet.public_subnet)
   iam_role_arn            = aws_iam_role.flow_logs.arn
@@ -60,7 +64,7 @@ resource "aws_flow_log" "vpc_flow_logs" {
 
 resource "aws_iam_role" "flow_logs" {
   name = "flow-logs-role"
-
+  managed_policy_arns = [ data.aws_iam_policy.cloud-watch-policy.arn ]
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -101,6 +105,10 @@ resource "aws_route_table_association" "public_rta" {
   route_table_id = aws_route_table.public_rt.id
 }
 
+
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
 output "subnet_pub_info" {
   value = [
     for subnet in aws_subnet.public_subnet : {
@@ -130,7 +138,4 @@ output "subnet_database_info" {
       subnet_tags       = subnet.tags
     }
   ]
-}
-output "vpc_id" {
-  value = aws_vpc.main.id
 }
